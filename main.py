@@ -1,7 +1,11 @@
 # Телеграм-бот v.002 - бот создаёт меню, присылает собачку, и анекдот
 
+
 import telebot  # pyTelegramBotAPI	4.3.1
 from telebot import types
+import requests
+import bs4   #beautifulsoup4
+import json
 
 bot = telebot.TeleBot('5221283435:AAEFoE2Uwt_k-CG_G2eR7ZuleJi6zXPHIZk')  # Создаем экземпляр бота
 
@@ -41,15 +45,19 @@ def get_text_messages(message):
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
         btn1 = types.KeyboardButton("🐶 Прислать собаку")
         btn2 = types.KeyboardButton("😂 Прислать анекдот")
+        btn3 = types.KeyboardButton("🇬🇧 English Word")
         back = types.KeyboardButton("Вернуться в главное меню")
-        markup.add(btn1, btn2, back)
+        markup.add(btn1, btn2, btn3, back)
         bot.send_message(chat_id, text="Выбирай...", reply_markup=markup)
 
     elif ms_text == "/dog" or ms_text == "🐶 Прислать собаку":  # .........................................................
-        bot.send_message(chat_id, text="еще не готово...😢")
+        bot.send_photo(chat_id, photo=get_dogURL(), caption="Вот тебе собачка!")
+
+    elif ms_text == "🇬🇧 English Word":  # .............................................................................
+        bot.send_message(chat_id, text=get_word())
 
     elif ms_text == "😂 Прислать анекдот":  # .............................................................................
-        bot.send_message(chat_id, text="еще не готово...")
+        bot.send_message(chat_id, text=get_anekdot())
 
     elif ms_text == "🖥 WEB-камера":
         bot.send_message(chat_id, text="еще не готово...")
@@ -68,6 +76,41 @@ def get_text_messages(message):
     else:  # ...........................................................................................................
         bot.send_message(chat_id, text="Я тебя слышу!!! Ваше сообщение: " + ms_text)
 
+def get_dogURL():
+    url = ""
+    req = requests.get('https://random.dog/woof.json')
+    if req.status_code == 200:
+        r_json = req.json()
+        url = r_json['url']
+        # url.split("/")[-1]
+    return url
+
+def get_word():
+    array_words = []
+    req_word = requests.get('https://kreekly.com/random/')
+    if req_word.status_code == 200:
+        soup = bs4.BeautifulSoup(req_word.text, "html.parser")
+        result_find = soup.select('.eng')
+        for result in result_find:
+            array_words.append(result.getText().strip())
+    if len(array_words) > 0:
+        return array_words[0]
+    else:
+        return ""
+
+
+def get_anekdot():
+    array_anekdots = []
+    req_anek = requests.get('http://anekdotme.ru/random')
+    if req_anek.status_code == 200:
+        soup = bs4.BeautifulSoup(req_anek.text, "html.parser")
+        result_find = soup.select('.anekdot_text')
+        for result in result_find:
+            array_anekdots.append(result.getText().strip())
+    if len(array_anekdots) > 0:
+        return array_anekdots[0]
+    else:
+        return ""
 # -----------------------------------------------------------------------
 bot.polling(none_stop=True, interval=0) # Запускаем бота
 
